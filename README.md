@@ -14,6 +14,7 @@ Agent currently lets you fetch event from google calender, fetch google classroo
 - [ ] Home assistant
 - [ ] PiHole
 - [ ] Computer volume
+- [ ] Task Manager
 
 ## File examples
 
