@@ -14,3 +14,15 @@ Agent currently lets you fetch event from google calender, fetch google classroo
 - [ ] Home assistant
 - [ ] PiHole
 - [ ] Computer volume
+
+## File examples
+
+### .env file example
+
+```text
+HA_TOKEN= 
+HA_URL= http://homeassistant.local:8123/api/
+CALENDER_API_KEY=
+PIHOLE_API_KEY=
+ESP_SOCKET=
+```
