@@ -6,16 +6,15 @@ from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 
 # Load environment variables from the .env file
-load_dotenv(dotenv="../.env")
+load_dotenv(dotenv_path="../.env")
 
 FEED_FILE = "task_manager_feed.json"
 USER_DATA_DIR = "./.playwright_profile"
 
 # Fetch credentials securely from environment variables
-STUDENT_EMAIL = os.getenv("STUDENT_EMAIL")
-STUDENT_PASSWORD = os.getenv("STUDENT_PASSWORD")
+STUDENT_EMAIL = os.getenv("CLASSROOM_EMAIL")
+STUDENT_PASSWORD = os.getenv("CLASSROOM_PASSWORD")
 
-# (The rest of your script follows here...)
 
 file_lock = threading.Lock()
 
@@ -36,6 +35,7 @@ def scrape_classroom():
     context = p.chromium.launch_persistent_context(
         user_data_dir=USER_DATA_DIR,
         headless=False,  # Keep False for your first test to watch it step through both screens!
+        slow_mo=10000,  # Slow down actions for better visibility during debugging
         args=["--disable-blink-features=AutomationControlled"],
     )
 
