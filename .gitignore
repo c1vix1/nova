@@ -1,2 +1,4 @@
 .env
 api/.playwrite_profile/
+.playwrite_profile/
+classmgr_api_feed.json

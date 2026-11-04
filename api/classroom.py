@@ -8,8 +8,8 @@ from playwright.sync_api import sync_playwright
 # Load environment variables from the .env file
 load_dotenv(dotenv_path="../.env")
 
-FEED_FILE = "task_manager_feed.json"
-USER_DATA_DIR = "./.playwright_profile"
+FEED_FILE = "classmgr_api_feed.json"
+USER_DATA_DIR = ".playwright_profile"
 
 # Fetch credentials securely from environment variables
 STUDENT_EMAIL = os.getenv("CLASSROOM_EMAIL")
