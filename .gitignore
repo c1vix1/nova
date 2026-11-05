@@ -3,3 +3,4 @@ api/.playwrite_profile/
 api/playwrite_profile/
 .playwright_profile/
 classmgr_api_feed.json
+task_manager_feed.json
