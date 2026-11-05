@@ -6,6 +6,8 @@ import threading
 import time
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
+import keyring
+
 
 load_dotenv()
 
@@ -15,17 +17,16 @@ USER_DATA_DIR = "./.playwright_profile"  # Caches session
 
 # Your student credentials
 STUDENT_EMAIL = os.getenv("CLASSROOM_EMAIL")
-STUDENT_PASSWORD = os.getenv("CLASSROOM_PASSWORD")
+STUDENT_PASSWORD = keyring.get_password("classroom-api", "email")
 
 # Validate environment variables before running
 if not STUDENT_EMAIL or not STUDENT_PASSWORD:
   raise ValueError(
       "[Classroom Bot] CRITICAL ERROR: CLASSROOM_EMAIL or CLASSROOM_PASSWORD is"
-      " not set in your .env file!"
+      " not set in your .env file/keyring!"
   )
 
 file_lock = threading.Lock()
-
 
 def safe_write_feed(data_dict):
   with file_lock:
@@ -155,82 +156,82 @@ def scrape_classroom():
 
     # Expand all accordion sections and extract tasks cleanly
     assignments = page.evaluate("""() => {
-            // Automatically click and expand all collapsed section accordions so all tasks load into DOM
-            const expandButtons = document.querySelectorAll('div[aria-expanded="false"], [role="button"]');
-            expandButtons.forEach(btn => {
-                const text = btn.innerText ? btn.innerText.toLowerCase() : '';
-                if (text.includes('due date') || text.includes('week') || text.includes('later')) {
-                    try { btn.click(); } catch(e) {}
-                }
-            });
+      // Automatically click and expand all collapsed section accordions so all tasks load into DOM
+      const expandButtons = document.querySelectorAll('div[aria-expanded="false"], [role="button"]');
+      expandButtons.forEach(btn => {
+          const text = btn.innerText ? btn.innerText.toLowerCase() : '';
+          if (text.includes('due date') || text.includes('this week') || text.includes('later') || text.includes('next week')) {
+              try { btn.click(); } catch(e) {}
+          }
+      });
 
-            let results = [];
-            const taskRows = document.querySelectorAll('li[data-role="task-row"]');
-            
-            taskRows.forEach(row => {
-                let assignmentType = 'assignment';
-                const iconDiv = row.querySelector('[role="img"], div[aria-label]');
-                if (iconDiv) {
-                    const label = iconDiv.getAttribute('aria-label');
-                    if (label) assignmentType = label.toLowerCase();
-                }
+      let results = [];
+      const taskRows = document.querySelectorAll('li[data-role="task-row"]');
+      
+      taskRows.forEach(row => {
+          let assignmentType = 'assignment';
+          const iconDiv = row.querySelector('[role="img"], div[aria-label]');
+          if (iconDiv) {
+              const label = iconDiv.getAttribute('aria-label');
+              if (label) assignmentType = label.toLowerCase();
+          }
 
-                const text = row.innerText ? row.innerText.trim() : '';
-                if (text) {
-                    let lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
-                    
-                    const ignoreWords = ['assignment', 'quiz', 'question', 'material'];
-                    if (lines.length > 0 && ignoreWords.includes(lines[0].toLowerCase())) {
-                        assignmentType = lines[0].toLowerCase();
-                        lines.shift();
-                    }
+          const text = row.innerText ? row.innerText.trim() : '';
+          if (text) {
+              let lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
+              
+              const ignoreWords = ['assignment', 'quiz', 'question', 'material'];
+              if (lines.length > 0 && ignoreWords.includes(lines[0].toLowerCase())) {
+                  assignmentType = lines[0].toLowerCase();
+                  lines.shift();
+              }
 
-                    let dueDate = 'No due date';
-                    let titleLines = [];
+              let dueDate = 'No due date';
+              let titleLines = [];
 
-                    lines.forEach(line => {
-                        const lower = line.toLowerCase();
-                        const isDateMarker = lower.includes('am') || lower.includes('pm') || 
-                                           lower.includes('jan') || lower.includes('feb') || 
-                                           lower.includes('mar') || lower.includes('apr') || 
-                                           lower.includes('may') || lower.includes('jun') || 
-                                           lower.includes('jul') || lower.includes('aug') || 
-                                           lower.includes('sep') || lower.includes('oct') || 
-                                           lower.includes('nov') || lower.includes('dec') ||
-                                           lower.includes('today') || lower.includes('tomorrow');
+              lines.forEach(line => {
+                  const lower = line.toLowerCase();
+                  const isDateMarker = lower.includes('am') || lower.includes('pm') || 
+                                      lower.includes('jan') || lower.includes('feb') || 
+                                      lower.includes('mar') || lower.includes('apr') || 
+                                      lower.includes('may') || lower.includes('jun') || 
+                                      lower.includes('jul') || lower.includes('aug') || 
+                                      lower.includes('sep') || lower.includes('oct') || 
+                                      lower.includes('nov') || lower.includes('dec') ||
+                                      lower.includes('today') || lower.includes('tomorrow');
 
-                        if (isDateMarker && !line.includes(' - Per ') && dueDate === 'No due date') {
-                            dueDate = line;
-                        } else {
-                            titleLines.push(line);
-                        }
-                    });
+                  if (isDateMarker && !line.includes(' - Per ') && dueDate === 'No due date') {
+                      dueDate = line;
+                  } else {
+                      titleLines.push(line);
+                  }
+              });
 
-                    let title = titleLines.join(' ').trim();
-                    // Thoroughly strip any leading assignment/quiz prefix glued to the title
-                    title = title.replace(/^(assignment|quiz|question|material)\\s*/i, '');
+              let title = titleLines.join(' ').trim();
+              // Thoroughly strip any leading assignment/quiz prefix glued to the title
+              title = title.replace(/^(assignment|quiz|question|material)\\s*/i, '');
 
-                    if (title) {
-                        results.push({
-                            type: assignmentType,
-                            title: title,
-                            due: dueDate
-                        });
-                    }
-                }
-            });
+              if (title) {
+                  results.push({
+                      type: assignmentType,
+                      title: title,
+                      due: dueDate
+                  });
+              }
+          }
+      });
 
-            // Deduplicate items by title
-            const unique = [];
-            const seen = new Set();
-            for (const r of results) {
-                if (!seen.has(r.title)) {
-                    seen.add(r.title);
-                    unique.push(r);
-                }
-            }
-            return unique;
-        }""")
+      // Deduplicate items by title
+      const unique = [];
+      const seen = new Set();
+      for (const r of results) {
+          if (!seen.has(r.title)) {
+              seen.add(r.title);
+              unique.push(r);
+          }
+      }
+      return unique;
+    }""")
 
     if not assignments:
       assignments = [{

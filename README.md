@@ -15,3 +15,13 @@ Nova currently lets you fetch event from google calender, fetch google classroom
 - [ ] PiHole
 - [ ] Computer volume
 - [ ] Task Manager
+
+Your passwords are stored in python Keyring. 
+
+```bash
+python3
+
+import keyring
+keyring.set_password("classroom-api", "your-email", "your-password")
+keyring.set_password("calender-api", "your-email", "your-password")
+```

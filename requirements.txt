@@ -5,3 +5,4 @@ sqlite3
 homeassistant_api
 dotenv
 playwrite
+keyring
