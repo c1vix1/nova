@@ -17,7 +17,7 @@ USER_DATA_DIR = "./.playwright_profile"  # Caches session
 
 # Your student credentials
 STUDENT_EMAIL = os.getenv("CLASSROOM_EMAIL")
-STUDENT_PASSWORD = keyring.get_password("classroom-api", "email")
+STUDENT_PASSWORD = keyring.get_password("classroom-api", STUDENT_EMAIL)
 
 # Validate environment variables before running
 if not STUDENT_EMAIL or not STUDENT_PASSWORD:
