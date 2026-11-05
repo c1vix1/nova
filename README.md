@@ -6,7 +6,7 @@ A dumb agent with tools to help you every day (really me).
 
 Built on a ESP32 with a screen
 
-Nova currently lets you fetch event from google calender, fetch google classroom assignment via calender ID, control your [home-assistant.io](Home Assistant), track a your PiHole Instance, and control your computer's volume.
+Nova currently lets you fetch event from google calender, fetch google classroom assignment via calender ID, control your (Home Assistant)[home-assistant.io], track a your PiHole Instance, and control your computer's volume.
 
 - [ ] Timer Control
 - [ ] Google calender
