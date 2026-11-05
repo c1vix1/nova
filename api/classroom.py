@@ -2,10 +2,10 @@ import json
 import os
 import threading
 import time
-from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 
-load_dotenv(dotenv_path="../.env")
+load_dotenv()
 
 # Configuration constants
 FEED_FILE = "task_manager_feed.json"
@@ -13,15 +13,15 @@ USER_DATA_DIR = "./.playwright_profile"  # Caches session to minimize daily logi
 
 # Your student credentials
 STUDENT_EMAIL = os.getenv("CLASSROOM_EMAIL")
-STUDENT_USERNAME = os.getenv("CLASSROOM_EMAIL")
-STUDENT_PASSWORD = os.getenv("CLASSROOM_PASSWORD")  
+STUDENT_PASSWORD = os.getenv("CLASSROOM_PASSWORD")
 
+print(STUDENT_EMAIL)
+print(STUDENT_PASSWORD)
 # Thread lock to prevent race conditions when writing to the JSON file
 file_lock = threading.Lock()
 
 
 def safe_write_feed(data_dict):
-  """Safely writes the scraped assignments to the local JSON feed using a lock."""
   with file_lock:
     try:
       with open(FEED_FILE, "w", encoding="utf-8") as f:
@@ -32,102 +32,119 @@ def safe_write_feed(data_dict):
 
 
 def scrape_classroom():
-  print("[Classroom Bot] Starting browser for Google Classroom...")
+  print("[Classroom Bot] Starting browser for School Google Classroom...")
   with sync_playwright() as p:
-    # Persistent context preserves your login session across runs
     context = p.chromium.launch_persistent_context(
         user_data_dir=USER_DATA_DIR,
-        headless=False,  # Set to True once you confirm login works smoothly
-        slow_mo=1000000,
+        headless=False,  # Keep False for the first run to complete your SSO login securely
         args=["--disable-blink-features=AutomationControlled"],
     )
 
     page = context.new_page()
 
     try:
-      # Navigate directly to Google Classroom To-Do page
-      page.goto("https://classroom.google.com/u/0/todo", timeout=60000)
+      # Navigate directly to the Google Classroom assignments page
+      page.goto(
+          "https://classroom.google.com/a/not-turned-in/all", timeout=60000
+      )
+      page.wait_for_load_state("domcontentloaded", timeout=15000)
 
-      # Check if we hit a sign-in, SSO, or RapidID portal wall
-      if any(
-          keyword in page.url
-          for keyword in [
-              "signin",
-              "sso",
-              "identifier",
-              "login",
-              "rapididentity",
-              "auth",
-          ]
+      # Handle Google / RapidIdentity Login Walls if present
+      if (
+          "accounts.google.com" in page.url
+          or "portal" in page.url
+          or "sso" in page.url
       ):
         print(
-            "[Classroom Bot] Sign-in / RapidIdentity portal detected."
-            " Authenticating..."
+            "[Classroom Bot] Login/SSO wall detected. Checking for email field..."
         )
 
-        # 1. Enter student email on Google's login page if present
-        try:
-          page.wait_for_selector('input[type="email"]', timeout=5000)
-          page.fill('input[type="email"]', STUDENT_EMAIL)
+        email_input = page.locator(
+            'input[type="email"], input#identifierId, input#username,'
+            ' input[name="username"]'
+        )
+        if email_input.count() > 0 and email_input.first.is_visible():
+          email_input.first.fill(STUDENT_EMAIL)
           page.keyboard.press("Enter")
           page.wait_for_timeout(3000)
-        except Exception:
-          pass  # Might already be on the school SSO page
 
-        # 2. Handle RapidIdentity portal fields if redirected
-        if any(
-            keyword in page.url
-            for keyword in ["rapididentity", "sso", "portal", "auth"]
-        ):
-          print("[Classroom Bot] Filling RapidIdentity SSO credentials...")
-          page.fill(
-              'input#username, input[name="username"], input[type="text"]',
-              STUDENT_USERNAME,
+        # Check for password/RapidIdentity portal input field
+        password_input = page.locator(
+            'input[type="password"], input#password, input[name="password"]'
+        )
+        if password_input.count() > 0 and password_input.first.is_visible():
+          print(
+              "[Classroom Bot] Password/SSO field active. Entering"
+              " credentials..."
           )
-          page.fill(
-              'input#password, input[name="password"], input[type="password"]',
-              STUDENT_PASSWORD,
-          )
-          page.click(
-              'button#submitButton, button[type="submit"], input[type="submit"]'
-          )
+          password_input.first.fill(STUDENT_PASSWORD)
 
-        # 3. Wait until successfully redirected back to Google Classroom
-        page.wait_for_url("**/classroom.google.com/**", timeout=45000)
-        print("[Classroom Bot] Authentication successful!")
+          submit_btn = page.locator(
+              'button#submitButton, button[type="submit"],'
+              ' input[type="submit"], button#login-button'
+          )
+          if submit_btn.count() > 0 and submit_btn.first.is_visible():
+            submit_btn.first.click()
+          else:
+            page.keyboard.press("Enter")
 
-      # Wait for assignment items to load in the DOM
-      page.wait_for_selector('.gHcFcc, [role="listitem"]', timeout=15000)
+          print("[Classroom Bot] Submitted credentials. Waiting for SSO...")
+
+      # Wait until successfully redirected back into Google Classroom dashboard
+      print(
+          "[Classroom Bot] Waiting for redirect to Google Classroom dashboard..."
+      )
+      page.wait_for_url("**/classroom.google.com/**", timeout=60000)
+      print("[Classroom Bot] Successfully authenticated!")
+
+      # Give the dynamic content time to render tasks
+      print("[Classroom Bot] Loading assignments feed...")
+      page.wait_for_timeout(5000)
 
       assignments = []
-      items = page.locator('.gHcFcc, [role="listitem"]').all()
+      # Target common assignment card containers in Google Classroom
+      items = page.locator(
+          '.gHcFcc, [role="listitem"], .gXqA6c, div.toI8Rb'
+      ).all()
 
       for item in items:
         try:
-          title = item.locator(".YVvSwe, .nDgy9d").inner_text()
-          due_date = item.locator(".BPb8kf, .fxgd0d").inner_text()
-          assignments.append({"title": title, "due": due_date})
+          title_elem = item.locator(".YVvSwe, .nDgy9d, .asQXV, span.onkcGd")
+          due_elem = item.locator(".BPb8kf, .fxgd0d, .ZxGRMe, div.yi4h_")
+
+          if title_elem.count() > 0:
+            title = title_elem.first.inner_text().strip()
+            due_date = (
+                due_elem.first.inner_text().strip()
+                if due_elem.count() > 0
+                else "No due date"
+            )
+            assignments.append({"title": title, "due": due_date})
         except Exception:
           continue
 
-      # Fallback structure if no items are found
       if not assignments:
-        assignments = [
-            {"title": "Check Google Classroom directly", "due": "Today"}
-        ]
+        assignments = [{"title": "No pending assignments found", "due": "None"}]
 
       data = {
           "last_updated": time.strftime("%Y-%m-%d %H:%M:%S"),
           "assignments": assignments,
       }
 
-      # Safely output to local JSON feed
       safe_write_feed(data)
       print(f"[Classroom Bot] Successfully scraped {len(assignments)} tasks.")
 
     except Exception as e:
       print(f"[Classroom Bot] Error during scraping or login: {e}")
+      try:
+        page.screenshot(path="error_screenshot.png")
+        print(
+            "[Classroom Bot] Saved debug screenshot to 'error_screenshot.png'."
+        )
+      except Exception:
+        pass
     finally:
+     # Keep context open briefly or close safely
       context.close()
 
 
