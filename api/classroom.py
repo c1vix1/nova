@@ -1,5 +1,5 @@
 # Currentlly, Classroom Bot is not capturing some assigments and needs fixing
-
+# ENABLE PARSE FUNCTION IN PYTHON TO FIX ASSIGNMENT CAPTURE ON LINE 292
 import json
 import os
 import re
@@ -8,6 +8,7 @@ import time
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 import keyring
+import classroom_example  # For testing and debugging
 
 load_dotenv()
 
@@ -28,7 +29,6 @@ if not STUDENT_EMAIL or not STUDENT_PASSWORD:
 
 file_lock = threading.Lock()
 
-
 def safe_write_feed(data_dict):
   with file_lock:
     try:
@@ -43,6 +43,7 @@ def parse_task_in_python(raw_items):
   """Processes raw row text dictionaries in Python for clean separation."""
   results = []
   ignore_words = ["assignment", "quiz", "question", "material"]
+  print(raw_items)
 
   for item in raw_items:
     assignment_type = item.get("type", "assignment")
@@ -286,8 +287,8 @@ def scrape_classroom():
       return rawData;
     }""")
 
-    # Process all the data cleanly in Python
-    assignments = parse_task_in_python(raw_assignments)
+    # Process all the data cleanly in Python (DISABLED)
+    # assignments = parse_task_in_python(raw_assignments)
 
     if not assignments:
       assignments = [{
@@ -320,4 +321,5 @@ def scrape_classroom():
 
 
 if __name__ == "__main__":
-  scrape_classroom()
+  #scrape_classroom() - ENABLE TO RUN SCRAPER
+  parse_task_in_python(classroom_example.test)  # For testing and debugging:
