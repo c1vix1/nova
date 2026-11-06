@@ -33,13 +33,13 @@ def safe_write_feed(data_dict):
     try:
       with open(FEED_FILE, "w", encoding="utf-8") as f:
         json.dump(data_dict, f, indent=4)
-      print(f"[Classroom Bot] Successfully updated {FEED_FILE}")
+      print(f"[Nova Classroom] Successfully updated {FEED_FILE}")
     except Exception as e:
-      print(f"[Classroom Bot] Error writing to JSON feed: {e}")
+      print(f"[Nova Classroom] Error writing to JSON feed: {e}")
 
 
 def scrape_classroom():
-  print("[Classroom Bot] Starting browser for Austin ISD Classroom...")
+  print("[Nova Classroom] Starting browser for Austin ISD Classroom...")
   p = sync_playwright().start()
   try:
     context = p.chromium.launch_persistent_context(
@@ -49,7 +49,7 @@ def scrape_classroom():
     )
   except Exception as e:
     print(
-        "[Classroom Bot] Error launching browser. Make sure all other Chrome"
+        "[Nova Classroom] Error launching browser. Make sure all other Chrome"
         f" instances using profile {USER_DATA_DIR} are closed: {e}"
     )
     p.stop()
@@ -61,7 +61,7 @@ def scrape_classroom():
     # Navigate directly to the Google Classroom assignments page
     page.goto("https://classroom.google.com/a/not-turned-in/all", timeout=60000)
     print(
-        "[Classroom Bot] Navigated to Classroom. Checking authentication"
+        "[Nova Classroom] Navigated to Classroom. Checking authentication"
         " status..."
     )
 
@@ -69,7 +69,7 @@ def scrape_classroom():
     for _ in range(15):
       page.wait_for_timeout(3000)
       current_url = page.url
-      print(f"[Classroom Bot] Current URL: {current_url}")
+      print(f"[Nova Classroom] Current URL: {current_url}")
 
       # Confirm we have successfully reached Google Classroom and task rows are ready
       if "classroom.google.com" in current_url:
@@ -78,7 +78,7 @@ def scrape_classroom():
               "() => document.baseURI.includes('classroom.google.com')"
           ):
             print(
-                "[Classroom Bot] Successfully inside Google Classroom"
+                "[Nova Classroom] Successfully inside Google Classroom"
                 " dashboard!"
             )
             break
@@ -87,13 +87,13 @@ def scrape_classroom():
 
       # 0. Handle Google "Verify it's you" Speedbump / Saml Confirmation Screen
       if "speedbump" in current_url or "samlconfirmaccount" in current_url:
-        print("[Classroom Bot] Google account verification speedbump detected.")
+        print("[Nova Classroom] Google account verification speedbump detected.")
         continue_btn = page.locator(
             'button:has-text("Continue"), button#submitButton,'
             ' button[type="submit"]'
         )
         if continue_btn.count() > 0 and continue_btn.first.is_visible():
-          print("[Classroom Bot] Clicking Continue on verification page...")
+          print("[Nova Classroom] Clicking Continue on verification page...")
           continue_btn.first.click()
           page.wait_for_timeout(4000)
         continue
@@ -101,7 +101,7 @@ def scrape_classroom():
       # 1. Handle Google Email / Identifier Screen
       email_input = page.locator('input[type="email"], input#identifierId')
       if email_input.count() > 0 and email_input.first.is_visible():
-        print(f"[Classroom Bot] Entering Google email: {STUDENT_EMAIL}")
+        print(f"[Nova Classroom] Entering Google email: {STUDENT_EMAIL}")
         email_input.first.fill(STUDENT_EMAIL)
 
         next_btn = page.locator('button#identifierNext, button:has-text("Next")')
@@ -115,7 +115,7 @@ def scrape_classroom():
       # 2. Handle RapidIdentity Username/Identification Screen
       username_input = page.locator('input#identification')
       if username_input.count() > 0 and username_input.first.is_visible():
-        print(f"[Classroom Bot] Entering RapidIdentity ID: {STUDENT_EMAIL}")
+        print(f"[Nova Classroom] Entering RapidIdentity ID: {STUDENT_EMAIL}")
         username_input.first.fill(STUDENT_EMAIL)
 
         continue_btn = page.locator(
@@ -133,7 +133,7 @@ def scrape_classroom():
           'input[type="password"], input#password, input[name="password"]'
       )
       if password_input.count() > 0 and password_input.first.is_visible():
-        print("[Classroom Bot] Entering password...")
+        print("[Nova Classroom] Entering password...")
         password_input.first.fill(STUDENT_PASSWORD)
 
         submit_btn = page.locator(
@@ -146,12 +146,12 @@ def scrape_classroom():
         else:
           page.keyboard.press("Enter")
 
-        print("[Classroom Bot] Credentials submitted. Waiting for redirect...")
+        print("[Nova Classroom] Credentials submitted. Waiting for redirect...")
         page.wait_for_timeout(6000)
         continue
 
     # Wait briefly for dynamic items to fully settle
-    print("[Classroom Bot] Loading assignments feed...")
+    print("[Nova Classroom] Loading assignments feed...")
     page.wait_for_timeout(3000)
 
     # Expand all accordion sections and extract tasks cleanly
@@ -246,13 +246,13 @@ def scrape_classroom():
     }
 
     safe_write_feed(data)
-    print(f"[Classroom Bot] Successfully scraped {len(assignments)} tasks.")
+    print(f"[Nova Classroom] Successfully scraped {len(assignments)} tasks.")
 
   except Exception as e:
-    print(f"[Classroom Bot] Error during scraping or login: {e}")
+    print(f"[Nova Classroom] Error during scraping or login: {e}")
     try:
       page.screenshot(path="error_screenshot.png")
-      print("[Classroom Bot] Saved debug screenshot to 'error_screenshot.png'.")
+      print("[Nova Classroom] Saved debug screenshot to 'error_screenshot.png'.")
     except Exception:
       pass
   finally:
