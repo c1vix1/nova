@@ -40,95 +40,23 @@ def safe_write_feed(data_dict):
       print(f"[Nova Classroom] Error writing to JSON feed: {e}")
 
 
-def parse_task_in_python(raw_items):
-  """Processes raw row text dictionaries in Python for clean separation."""
+def parse_task_in_python(raw):
   results = []
-  ignore_words = ["assignment", "quiz", "question", "material"]
-  print(raw_items)
+  print(raw)
 
-  for i in len(raw_items):
+  for i in len(raw):
     type = i.get("type", "assignment")
     raw_text = re.sub(r'[\n\t\r\\_]', '', i)
     if not raw_text:
       continue
 
     raw_text = raw_text.lstrip(type)
-    lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
+    months = ["Jan","Feb","Mar","May","Apr","Jun","July"]
 
-    # Strip leading type labels if present
-    if lines and lines[0].lower() in ignore_words:
-      assignment_type = lines[0].lower()
-      lines.pop(0)
 
-    due_date = "No due date"
-    title_lines = []
 
-    for line in lines:
-      lower = line.lower()
-      is_class_name = " - per " in lower or "posted " in lower
 
-      has_day = any(
-          d in lower
-          for d in [
-              "monday",
-              "tuesday",
-              "wednesday",
-              "thursday",
-              "friday",
-              "saturday",
-              "sunday",
-          ]
-      )
-      has_month = any(
-          m in lower
-          for m in [
-              "jan",
-              "feb",
-              "mar",
-              "apr",
-              "may",
-              "jun",
-              "jul",
-              "aug",
-              "sep",
-              "oct",
-              "nov",
-              "dec",
-          ]
-      )
-      has_time = (
-          "am" in lower
-          or "pm" in lower
-          or "today" in lower
-          or "tomorrow" in lower
-      )
 
-      is_date_marker = has_day or has_month or has_time
-
-      if is_date_marker and not is_class_name and due_date == "No due date":
-        due_date = line
-      else:
-        title_lines.append(line)
-
-    title = " ".join(title_lines).strip()
-    title = re.sub(
-        r"^(assignment|quiz|question|material)\s*",
-        "",
-        title,
-        flags=re.IGNORECASE,
-    )
-
-    if title:
-      results.append({"type": assignment_type, "title": title, "due": due_date})
-
-  # Deduplicate using title + due date key
-  unique = []
-  seen = set()
-  for r in results:
-    key = f"{r['title']}|{r['due']}"
-    if key not in seen:
-      seen.add(key)
-      unique.append(r)
 
   return unique
 
