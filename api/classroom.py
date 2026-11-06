@@ -2,12 +2,12 @@
 
 import json
 import os
+import re
 import threading
 import time
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 import keyring
-
 
 load_dotenv()
 
@@ -28,6 +28,7 @@ if not STUDENT_EMAIL or not STUDENT_PASSWORD:
 
 file_lock = threading.Lock()
 
+
 def safe_write_feed(data_dict):
   with file_lock:
     try:
@@ -36,6 +37,97 @@ def safe_write_feed(data_dict):
       print(f"[Nova Classroom] Successfully updated {FEED_FILE}")
     except Exception as e:
       print(f"[Nova Classroom] Error writing to JSON feed: {e}")
+
+
+def parse_task_in_python(raw_items):
+  """Processes raw row text dictionaries in Python for clean separation."""
+  results = []
+  ignore_words = ["assignment", "quiz", "question", "material"]
+
+  for item in raw_items:
+    assignment_type = item.get("type", "assignment")
+    raw_text = item.get("raw_text", "").strip()
+    if not raw_text:
+      continue
+
+    lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
+
+    # Strip leading type labels if present
+    if lines and lines[0].lower() in ignore_words:
+      assignment_type = lines[0].lower()
+      lines.pop(0)
+
+    due_date = "No due date"
+    title_lines = []
+
+    for line in lines:
+      lower = line.lower()
+      is_class_name = " - per " in lower or "posted " in lower
+
+      has_day = any(
+          d in lower
+          for d in [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday",
+          ]
+      )
+      has_month = any(
+          m in lower
+          for m in [
+              "jan",
+              "feb",
+              "mar",
+              "apr",
+              "may",
+              "jun",
+              "jul",
+              "aug",
+              "sep",
+              "oct",
+              "nov",
+              "dec",
+          ]
+      )
+      has_time = (
+          "am" in lower
+          or "pm" in lower
+          or "today" in lower
+          or "tomorrow" in lower
+      )
+
+      is_date_marker = has_day or has_month or has_time
+
+      if is_date_marker and not is_class_name and due_date == "No due date":
+        due_date = line
+      else:
+        title_lines.append(line)
+
+    title = " ".join(title_lines).strip()
+    title = re.sub(
+        r"^(assignment|quiz|question|material)\s*",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    )
+
+    if title:
+      results.append({"type": assignment_type, "title": title, "due": due_date})
+
+  # Deduplicate using title + due date key
+  unique = []
+  seen = set()
+  for r in results:
+    key = f"{r['title']}|{r['due']}"
+    if key not in seen:
+      seen.add(key)
+      unique.append(r)
+
+  return unique
 
 
 def scrape_classroom():
@@ -154,18 +246,28 @@ def scrape_classroom():
     print("[Nova Classroom] Loading assignments feed...")
     page.wait_for_timeout(3000)
 
-    # Expand all accordion sections and extract tasks cleanly
-    assignments = page.evaluate("""() => {
-      // Automatically click and expand all collapsed section accordions so all tasks load into DOM
-      const expandButtons = document.querySelectorAll('div[aria-expanded="false"], [role="button"]');
-      expandButtons.forEach(btn => {
-          const text = btn.innerText ? btn.innerText.toLowerCase() : '';
-          if (text.includes('due date') || text.includes('this week') || text.includes('later') || text.includes('next week')) {
-              try { btn.click(); } catch(e) {}
-          }
-      });
+    # Safely expand each section accordion one-by-one with proper timing delays
+    section_selectors = [
+        'div[data-id*="NO_DUE_DATE"] [aria-expanded="false"]',
+        'div[data-id*="THIS_WEEK"] [aria-expanded="false"]',
+        'div[data-id*="NEXT_WEEK"] [aria-expanded="false"]',
+        'div[data-id*="LATER"] [aria-expanded="false"]',
+    ]
 
-      let results = [];
+    for sel in section_selectors:
+      try:
+        toggle = page.locator(sel)
+        if toggle.count() > 0 and toggle.first.is_visible():
+          toggle.first.click()
+          page.wait_for_timeout(1000)
+      except Exception:
+        pass
+
+    page.wait_for_timeout(2000)  # Final settle time for all task rows to populate DOM
+
+    # Extract raw data effortlessly in JS, let Python do the smart processing
+    raw_assignments = page.evaluate("""() => {
+      let rawData = [];
       const taskRows = document.querySelectorAll('li[data-role="task-row"]');
       
       taskRows.forEach(row => {
@@ -176,62 +278,16 @@ def scrape_classroom():
               if (label) assignmentType = label.toLowerCase();
           }
 
-          const text = row.innerText ? row.innerText.trim() : '';
-          if (text) {
-              let lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
-              
-              const ignoreWords = ['assignment', 'quiz', 'question', 'material'];
-              if (lines.length > 0 && ignoreWords.includes(lines[0].toLowerCase())) {
-                  assignmentType = lines[0].toLowerCase();
-                  lines.shift();
-              }
-
-              let dueDate = 'No due date';
-              let titleLines = [];
-
-              lines.forEach(line => {
-                  const lower = line.toLowerCase();
-                  const isDateMarker = lower.includes('am') || lower.includes('pm') || 
-                                      lower.includes('jan') || lower.includes('feb') || 
-                                      lower.includes('mar') || lower.includes('apr') || 
-                                      lower.includes('may') || lower.includes('jun') || 
-                                      lower.includes('jul') || lower.includes('aug') || 
-                                      lower.includes('sep') || lower.includes('oct') || 
-                                      lower.includes('nov') || lower.includes('dec') ||
-                                      lower.includes('today') || lower.includes('tomorrow');
-
-                  if (isDateMarker && !line.includes(' - Per ') && dueDate === 'No due date') {
-                      dueDate = line;
-                  } else {
-                      titleLines.push(line);
-                  }
-              });
-
-              let title = titleLines.join(' ').trim();
-              // Thoroughly strip any leading assignment/quiz prefix glued to the title
-              title = title.replace(/^(assignment|quiz|question|material)\\s*/i, '');
-
-              if (title) {
-                  results.push({
-                      type: assignmentType,
-                      title: title,
-                      due: dueDate
-                  });
-              }
-          }
+          rawData.push({
+              type: assignmentType,
+              raw_text: row.innerText ? row.innerText.trim() : ''
+          });
       });
-
-      // Deduplicate items by title
-      const unique = [];
-      const seen = new Set();
-      for (const r of results) {
-          if (!seen.has(r.title)) {
-              seen.add(r.title);
-              unique.push(r);
-          }
-      }
-      return unique;
+      return rawData;
     }""")
+
+    # Process all the data cleanly in Python
+    assignments = parse_task_in_python(raw_assignments)
 
     if not assignments:
       assignments = [{
