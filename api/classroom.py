@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 import keyring
 import classroom_example  # For testing and debugging
+import re
 
 load_dotenv()
 
@@ -45,12 +46,13 @@ def parse_task_in_python(raw_items):
   ignore_words = ["assignment", "quiz", "question", "material"]
   print(raw_items)
 
-  for item in raw_items:
-    assignment_type = item.get("type", "assignment")
-    raw_text = item.get("raw_text", "").strip()
+  for i in len(raw_items):
+    type = i.get("type", "assignment")
+    raw_text = re.sub(r'[\n\t\r\\_]', '', i)
     if not raw_text:
       continue
 
+    raw_text = raw_text.lstrip(type)
     lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
 
     # Strip leading type labels if present
