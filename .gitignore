@@ -5,3 +5,4 @@ api/playwrite_profile/
 classmgr_api_feed.json
 task_manager_feed.json
 __pycache__/
+set-password.py

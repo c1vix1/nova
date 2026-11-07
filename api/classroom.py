@@ -41,9 +41,13 @@ def safe_write_feed(data_dict):
 
 
 def parse_task_in_python(raw):
-  results = []
+  tasks = []
+  print("Check 1")
   print(raw)
-
+  print("Check 1 Finsh")
+  months = ["Jan","Feb","Mar","May","Apr","Jun","July","Aug","Sep","Oct","Nov","Dec"]
+  exclusionKeywords=["Posted"]
+  weekDays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
   for i in len(raw):
     type = i.get("type", "assignment")
     raw_text = re.sub(r'[\n\t\r\\_]', '', i)
@@ -51,14 +55,13 @@ def parse_task_in_python(raw):
       continue
 
     raw_text = raw_text.lstrip(type)
-    months = ["Jan","Feb","Mar","May","Apr","Jun","July"]
-
-
-
-
-
-
-  return unique
+    for e in len(weekDays):
+      if weekDays[e] in raw[i]:
+        raw[i] = raw[i].strip(weekDays[e])
+    print(raw)
+        
+    
+  return tasks
 
 
 def scrape_classroom():
