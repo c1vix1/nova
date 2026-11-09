@@ -48,17 +48,22 @@ def parse_task_in_python(raw):
   months = ["Jan","Feb","Mar","May","Apr","Jun","July","Aug","Sep","Oct","Nov","Dec"]
   exclusionKeywords=["Posted"]
   weekDays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-  for i in len(raw):
-    type = i.get("type", "assignment")
-    raw_text = re.sub(r'[\n\t\r\\_]', '', i)
+  for i in range(len(raw)):
+    task=raw[i]
+    type = task["type"]
+    infobar = task["raw_text"]
+    infobar = infobar.replace("\u202f", " ") # Clear Whitespace charcters
     if not raw_text:
       continue
 
     raw_text = raw_text.lstrip(type)
-    for e in len(weekDays):
+    for e in range(len(weekDays)):
       if weekDays[e] in raw[i]:
         raw[i] = raw[i].strip(weekDays[e])
-    print(raw)
+        print(weekDays[e])
+  print("Check 2")
+  print(raw)
+  print("Check 2 Finsh")
         
     
   return tasks
