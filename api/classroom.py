@@ -15,7 +15,7 @@ load_dotenv()
 
 # Configuration constants
 FEED_FILE = "task_manager_feed.json"
-USER_DATA_DIR = "./.playwright_profile"  # Caches session
+USER_DATA_DIR = "./.playwright_profile" 
 
 # Your student credentials
 STUDENT_EMAIL = os.getenv("CLASSROOM_EMAIL")
@@ -53,17 +53,20 @@ def parse_task_in_python(raw):
     type = task["type"]
     infobar = task["raw_text"]
     infobar = infobar.replace("\u202f", " ") # Clear Whitespace charcters
-    if not raw_text:
+    infobar = re.sub(r'\\([ntr\\\'\"abfv]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})', '', infobar)
+    if not task:
+      tasks = ["no tasks"]
+      return tasks
       continue
 
-    raw_text = raw_text.lstrip(type)
+    infobar = infobar.lstrip(type)
     for e in range(len(weekDays)):
       if weekDays[e] in raw[i]:
         raw[i] = raw[i].strip(weekDays[e])
         print(weekDays[e])
-  print("Check 2")
+  print("-----------------Check 2 ---------------------")
   print(raw)
-  print("Check 2 Finsh")
+  print("------------- Check 2 Finsh ------------------")
         
     
   return tasks
