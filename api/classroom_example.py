@@ -7,3 +7,7 @@ test = [
     {'type': 'assignment', 'raw_text': 'assignmentWriting Points of Concurrency Conjectures Day 2ADVANCED GEOMETRY - Hill - 044-3003.HJ000.Y-10 - Per 10Friday, Nov 13FridayNov 13'}, 
     {'type': 'assignment', 'raw_text': 'assignment\n\nPlay Writing Draft\n\nA1 Blank Page Fall 2026\n\nFriday, Nov 20'}
 ]
+
+test2 = [
+    {'type': 'assignment', 'raw_text': 'assignmentDigital vs. Traditional Media Chart / Compare & Contrast ChartPRINC OF ARTS A/V TECH & COMMS - Lever - 044-8500.RJ000.Y-1 - Per 05, 06Posted Tuesday, Sep 15'}
+]

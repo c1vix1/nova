@@ -263,4 +263,4 @@ def scrape_classroom():
 
 if __name__ == "__main__":
   #scrape_classroom() - ENABLE TO RUN SCRAPER
-  parse_task_in_python(classroom_example.test)  # For testing and debugging:
+  parse_task_in_python(classroom_example.test2)  # For testing and debugging:
