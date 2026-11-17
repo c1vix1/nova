@@ -52,7 +52,6 @@ def parse_task_in_python(raw):
     task=raw[i]
     type = task["type"]
     infobar = task["raw_text"]
-    infobar = infobar.replace("\u202f", " ") # Clear Whitespace charcters
     infobar = re.sub(r'\\([ntr\\\'\"abfv]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})', '', infobar)
     if not task:
       tasks = ["no tasks"]
