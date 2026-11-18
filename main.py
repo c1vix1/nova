@@ -2,7 +2,7 @@ import threading
 import socketmgr
 import dbmgr
 import task
-import apis
+import components
 import gui
 
 def socketmgr():

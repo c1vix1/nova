@@ -29,8 +29,10 @@ if not STUDENT_EMAIL or not STUDENT_PASSWORD:
   )
 
 # Load json files
-with open("data.json", "r", encoding="utf-8") as file:
-    data = json.load(file)
+with open("./components/classes.json", "r", encoding="utf-8") as file:
+    classList = json.load(file)
+classes = classList["classes"]
+
 
 file_lock = threading.Lock()
 
@@ -53,20 +55,27 @@ def parse_task_in_python(raw):
   exclusionKeywords=["Posted"]
   weekDays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
   for i in range(len(raw)):
-    task=raw[i]
-    type = task["type"]
-    infobar = task["raw_text"]
-    infobar = re.sub(r"\\(?:[nrtbfv\\'\"0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})","yes",infobar)
-    if not task:
+    taskRaw=raw[i]
+    type = taskRaw["type"]
+    infobar = taskRaw["raw_text"]
+    task = {""}
+    infobar = re.sub(r"\\(?:[nrtbfv\\'\"0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})","",infobar)
+    if not taskRaw:
       tasks = ["no tasks"]
       return tasks
-      continue
 
     infobar = infobar.lstrip(type)
-    for e in range(len(weekDays)):
-      if weekDays[e] in raw[i]:
-        raw[i] = raw[i].strip(weekDays[e])
-        print(weekDays[e])
+    for e in range(len(classes)):
+      eMatch = classes[e]
+      print(eMatch)
+      match = re.findall(eMatch,infobar)
+      print(match)
+      if len(match) > 0:
+        matchs = match[0]
+        infobar = re.sub(matchs,"",infobar)
+        task[""]
+        break
+    
   print("-----------------Check 2 ---------------------")
   print(infobar)
   print("------------- Check 2 Finsh ------------------")
