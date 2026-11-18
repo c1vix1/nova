@@ -52,7 +52,6 @@ def parse_task_in_python(raw):
     task=raw[i]
     type = task["type"]
     infobar = task["raw_text"]
-    infobar = infobar.replace("\u202f", " ") # Clear Whitespace charcters
     infobar = re.sub(r'\\([ntr\\\'\"abfv]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})', '', infobar)
     if not task:
       tasks = ["no tasks"]
@@ -263,4 +262,8 @@ def scrape_classroom():
 
 if __name__ == "__main__":
   #scrape_classroom() - ENABLE TO RUN SCRAPER
+<<<<<<< HEAD
   parse_task_in_python(classroom_example.test)  # For testing and debugging:
+=======
+  parse_task_in_python(classroom_example.test2)  # For testing and debugging:
+>>>>>>> fb3573c003ff432b2a1d821dc39fa0fbe0ec31fb
