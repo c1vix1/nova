@@ -9,5 +9,8 @@ test = [
 ]
 
 test2 = [
-    {'type': 'assignment', 'raw_text': 'assignment\nDigital vs. Traditional Media Chart / Compare & Contrast ChartPRINC OF ARTS A/V TECH & COMMS - Lever - 044-8500.RJ000.Y-1 - Per 05, 06Posted Tuesday, Sep 15'}
+    {'type': 'assignment', 'raw_text': 'assignmentDigital vs. Traditional Media Chart / Compare & Contrast ChartPRINC OF ARTS A/V TECH & COMMS - Lever - 044-8500.RJ000.Y-1 - Per 05, 06Posted Tuesday, Sep 15'}
+]
+test3 = [
+    {'type': 'assignment', 'raw_text': 'Digital vs. Traditional Media Chart / Compare & Contrast Chart','date_type':'posted','month':'9','day':'15'}
 ]

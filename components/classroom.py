@@ -24,9 +24,13 @@ STUDENT_PASSWORD = keyring.get_password("classroom-api", STUDENT_EMAIL)
 # Validate environment variables before running
 if not STUDENT_EMAIL or not STUDENT_PASSWORD:
   raise ValueError(
-      "[Classroom Bot] CRITICAL ERROR: CLASSROOM_EMAIL or CLASSROOM_PASSWORD is"
+      "[Classroom Component] CRITICAL ERROR: CLASSROOM_EMAIL or CLASSROOM_PASSWORD is"
       " not set in your .env file/keyring!"
   )
+
+# Load json files
+with open("data.json", "r", encoding="utf-8") as file:
+    data = json.load(file)
 
 file_lock = threading.Lock()
 
@@ -52,7 +56,7 @@ def parse_task_in_python(raw):
     task=raw[i]
     type = task["type"]
     infobar = task["raw_text"]
-    infobar = re.sub(r'\\([ntr\\\'\"abfv]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})', '', infobar)
+    infobar = re.sub(r"\\(?:[nrtbfv\\'\"0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})","yes",infobar)
     if not task:
       tasks = ["no tasks"]
       return tasks
@@ -64,7 +68,7 @@ def parse_task_in_python(raw):
         raw[i] = raw[i].strip(weekDays[e])
         print(weekDays[e])
   print("-----------------Check 2 ---------------------")
-  print(raw)
+  print(infobar)
   print("------------- Check 2 Finsh ------------------")
         
     
@@ -262,8 +266,4 @@ def scrape_classroom():
 
 if __name__ == "__main__":
   #scrape_classroom() - ENABLE TO RUN SCRAPER
-<<<<<<< HEAD
-  parse_task_in_python(classroom_example.test)  # For testing and debugging:
-=======
   parse_task_in_python(classroom_example.test2)  # For testing and debugging:
->>>>>>> fb3573c003ff432b2a1d821dc39fa0fbe0ec31fb
