@@ -58,10 +58,10 @@ def parse_task_in_python(raw):
     taskRaw=raw[i]
     type = taskRaw["type"]
     infobar = taskRaw["raw_text"]
-    task = {""}
+    task = {"name":"ASSIGNMENT NAME","class":"class1","dateType":"posted","month":1,"day":1,"year":2026}
     infobar = re.sub(r"\\(?:[nrtbfv\\'\"0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})","",infobar)
     if not taskRaw:
-      tasks = ["no tasks"]
+      tasks = [{"name":"Nothing Today","class":"Che","dateType":"posted","month":1,"day":1,"year":2026}]
       return tasks
 
     infobar = infobar.lstrip(type)
